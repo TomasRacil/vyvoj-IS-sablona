@@ -1,0 +1,56 @@
+// Konfigurace pro VS Code Dev Container - SPECIFICKY PRO BACKEND VÝVOJ
+{
+    "name": "Vývoj IS - Backend (Python/FastAPI)", // Jasný název pro výběr
+    // Společný docker-compose soubor
+    "dockerComposeFile": [
+        "../../docker-compose.yml" // Cesta zpět do kořene projektu
+    ],
+    // Služba, ke které se připojujeme pro backend vývoj
+    "service": "backend",
+    "workspaceFolder": "/workspace//backend", // Pracovní adresář v kontejneru
+    // Přizpůsobení VS Code pro backend
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "python.defaultInterpreterPath": "/usr/local/bin/python",
+                "python.linting.enabled": true,
+                "python.linting.pylintEnabled": true,
+                "python.formatting.provider": "black",
+                "editor.formatOnSave": true,
+                // Nastavení SQLTools pro připojení k DB z backend kontejneru
+                "sqltools.connections": [
+                    {
+                        "name": "Template DB (Docker Backend)",
+                        "driver": "PostgreSQL",
+                        "previewLimit": 50,
+                        "server": "db", // Název DB služby v Docker síti
+                        "port": 5432,
+                        "database": "${localEnv:POSTGRES_DB}",
+                        "username": "${localEnv:POSTGRES_USER}"
+                        // Heslo zadat ručně nebo použít bezpečnější metodu
+                    }
+                ]
+            },
+            // Rozšíření specifická pro backend vývoj
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylint",
+                "ms-python.black-formatter",
+                "ms-azuretools.vscode-docker",
+                "mtxr.sqltools",
+                "mtxr.sqltools-driver-pg",
+                "ms-vscode-remote.remote-containers",
+                "visualstudioexptteam.vscodeintellicode",
+                "tamasfe.even-better-toml"
+                // Můžeme přidat další specifické pro FastAPI, SQLAlchemy atd.
+            ]
+        }
+    },
+    // Přesměrované porty relevantní pro backend
+    "forwardPorts": [
+        8000
+    ], // Port FastAPI aplikace
+    // Příkaz po vytvoření kontejneru (např. spuštění migrací)
+    // "postCreateCommand": "sleep 5 && alembic upgrade head", // Počkáme 5s na DB a spustíme migrace
+    "postStartCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}"
+}

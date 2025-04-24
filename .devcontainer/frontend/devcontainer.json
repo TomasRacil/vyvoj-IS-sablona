@@ -1,0 +1,28 @@
+// Konfigurace pro VS Code Dev Container - SPECIFICKY PRO BACKEND VÝVOJ
+{
+    "name": "Vývoj IS - Frontend (Node.js/React)", // Jasný název pro výběr
+    // Společný docker-compose soubor
+    "dockerComposeFile": [
+        "../../docker-compose.yml" // Cesta zpět do kořene projektu
+    ],
+    // Služba, ke které se připojujeme pro backend vývoj
+    "service": "frontend",
+    "workspaceFolder": "/workspace/frontend", // Pracovní adresář v kontejneru
+    // Přizpůsobení VS Code pro backend
+    "customizations": {
+        "vscode": {
+            "settings": {},
+            // Rozšíření specifická pro frontend vývoj
+            "extensions": [
+                "humao.rest-client"
+            ]
+        }
+    },
+    // Přesměrované porty relevantní pro backend
+    "forwardPorts": [
+        8000
+    ], // Port FastAPI aplikace
+    // Příkaz po vytvoření kontejneru (např. spuštění migrací)
+    // "postCreateCommand": "sleep 5 && alembic upgrade head", // Počkáme 5s na DB a spustíme migrace
+    "postStartCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}"
+}

@@ -14,11 +14,9 @@ def create_app(config_name=None, config_override=None):
 
     if config_override:
         app.config.from_object(config_override)
-        print(config_override)
     else:
         app.config.from_object(config_by_name[config_name])
 
-    print(app.config)
     # Inicializace rozšíření s aplikací
     db.init_app(app)
     migrate.init_app(app, db)

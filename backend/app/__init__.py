@@ -5,14 +5,20 @@ from .db import db, migrate  # Import db a migrate z db.py
 import os
 
 
-def create_app(config_name=None):
+def create_app(config_name=None, config_override=None):
     """Factory funkce pro vytvoření Flask aplikace."""
     if config_name is None:
         config_name = os.getenv("FLASK_CONFIG", "default")
 
     app = Flask(__name__)
-    app.config.from_object(config_by_name[config_name])
 
+    if config_override:
+        app.config.from_object(config_override)
+        print(config_override)
+    else:
+        app.config.from_object(config_by_name[config_name])
+
+    print(app.config)
     # Inicializace rozšíření s aplikací
     db.init_app(app)
     migrate.init_app(app, db)

@@ -39,7 +39,7 @@ class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = (
         os.environ.get("TEST_DATABASE_URL")
-        or "postgresql+psycopg://user:password@localhost/test_db"
+        or "sqlite:///:memory:"
     )
     WTF_CSRF_ENABLED = False  # Vypnutí CSRF pro testy formulářů
 

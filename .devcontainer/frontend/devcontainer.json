@@ -14,7 +14,8 @@
             "settings": {},
             // Rozšíření specifická pro frontend vývoj
             "extensions": [
-                "humao.rest-client"
+                "humao.rest-client",
+                "ritwickdey.LiveServer"
             ]
         }
     },
@@ -23,6 +24,5 @@
         8000
     ], // Port FastAPI aplikace
     // Příkaz po vytvoření kontejneru (např. spuštění migrací)
-    // "postCreateCommand": "sleep 5 && alembic upgrade head", // Počkáme 5s na DB a spustíme migrace
     "postStartCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}"
 }

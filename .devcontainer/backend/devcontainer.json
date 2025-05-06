@@ -41,8 +41,8 @@
                 "mtxr.sqltools-driver-pg",
                 "ms-vscode-remote.remote-containers",
                 "visualstudioexptteam.vscodeintellicode",
-                "tamasfe.even-better-toml"
-                // Můžeme přidat další specifické pro FastAPI, SQLAlchemy atd.
+                "tamasfe.even-better-toml",
+                "humao.rest-client"
             ]
         }
     },

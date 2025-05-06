@@ -1,5 +1,5 @@
-from app import create_app, db # Import z lokálního balíčku app
-from app.models import User # Importujte své modely
+from app import create_app, db  # Import z lokálního balíčku app
+from app.models import *  # Importujte své modely
 import os
 
 # Získání názvu konfigurace z proměnné prostředí nebo default
@@ -11,4 +11,4 @@ app = create_app(config_name)
 
 if __name__ == '__main__':
     # Spuštění vývojového serveru (pro produkci použijte WSGI server jako Gunicorn)
-    app.run(host='0.0.0.0', port=5000) # Naslouchání na všech rozhraních
+    app.run(host='0.0.0.0', port=5000)  # Naslouchání na všech rozhraních

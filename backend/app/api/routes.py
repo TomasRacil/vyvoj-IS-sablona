@@ -2,27 +2,27 @@
 # Flask-Smorest využívá Marshmallow schémata pro validaci a serializaci
 # a MethodView pro strukturování endpointů.
 
-from flask.views import MethodView  # Základní třída pro pohledy založené na třídách
+# Základní třída pro pohledy založené na třídách
+from flask.views import MethodView
 from flask_smorest import abort  # Funkce pro HTTP chyby a Blueprint z Flask-Smorest
 
 # Poznámka: Váš kód importuje Blueprint z . (api_v1_bp = Blueprint(...)), což je také v pořádku.
 # Zde předpokládáme, že api_v1_bp je instance Blueprint definovaná v api/__init__.py
 
 # Importy z vaší aplikace
-from ..models import User  # Import databázového modelu User
+from app.models import User  # Import databázového modelu User
 from ..schemas import UserSchema, UserCreateSchema  # Import Marshmallow schémat
 from ..db import db  # Import instance SQLAlchemy databáze
 from sqlalchemy.exc import IntegrityError  # Pro odchytávání chyb unikátnosti
 from . import api_v1_bp
 
-# Zde by měla být instance Blueprint, např.:
-# api_v1_bp = Blueprint('api_v1', __name__, url_prefix='/api/v1', description='API verze 1')
 # Tento kód předpokládá, že `api_v1_bp` již existuje (importováno z __init__.py)
 
 # --- Endpointy pro uživatele ---
 
 
-@api_v1_bp.route("/users")  # Dekorátor registruje třídu pro danou cestu na blueprintu
+# Dekorátor registruje třídu pro danou cestu na blueprintu
+@api_v1_bp.route("/users")
 class UsersResource(MethodView):
     """
     Resource pro operace s kolekcí uživatelů (/users).

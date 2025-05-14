@@ -42,7 +42,8 @@
                 "ms-vscode-remote.remote-containers",
                 "visualstudioexptteam.vscodeintellicode",
                 "tamasfe.even-better-toml",
-                "humao.rest-client"
+                "humao.rest-client",
+                "eamodio.gitlens"
             ]
         }
     },

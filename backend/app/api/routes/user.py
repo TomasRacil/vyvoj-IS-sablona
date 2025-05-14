@@ -1,22 +1,14 @@
-# Tento soubor definuje API endpointy pomocí Flask-Smorest.
-# Flask-Smorest využívá Marshmallow schémata pro validaci a serializaci
-# a MethodView pro strukturování endpointů.
-
 # Základní třída pro pohledy založené na třídách
 from flask.views import MethodView
 from flask_smorest import abort  # Funkce pro HTTP chyby a Blueprint z Flask-Smorest
 
-# Poznámka: Váš kód importuje Blueprint z . (api_v1_bp = Blueprint(...)), což je také v pořádku.
-# Zde předpokládáme, že api_v1_bp je instance Blueprint definovaná v api/__init__.py
-
 # Importy z vaší aplikace
 from app.models import User  # Import databázového modelu User
-from ..schemas import UserSchema, UserCreateSchema  # Import Marshmallow schémat
-from ..db import db  # Import instance SQLAlchemy databáze
+# Import Marshmallow schémat
+from app.schemas import UserCreateSchema, UserSchema
+from app.db import db  # Import instance SQLAlchemy databáze
 from sqlalchemy.exc import IntegrityError  # Pro odchytávání chyb unikátnosti
-from . import api_v1_bp
-
-# Tento kód předpokládá, že `api_v1_bp` již existuje (importováno z __init__.py)
+from app.api import api_v1_bp
 
 # --- Endpointy pro uživatele ---
 
@@ -158,9 +150,3 @@ class UserResource(MethodView):
 
         # Při úspěšném smazání se vrací prázdná odpověď s kódem 204
         return ""
-
-
-# Zde můžete přidat další Resources pro jiné části vašeho API
-# např. Events, Registrations, atd.
-# @api_v1_bp.route("/events")
-# class EventsResource(MethodView): ...

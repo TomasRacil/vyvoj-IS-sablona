@@ -9,6 +9,4 @@ api_v1_bp = Blueprint(
     "api_v1", __name__, url_prefix="/api/v1", description="API Verze 1 pro IS Šablonu"
 )
 
-# Import rout, aby se registrovaly v blueprintu
-# Důležité: importujte až po vytvoření blueprintu, aby se zabránilo cyklickým importům
-from . import routes
+from app.api.routes import *

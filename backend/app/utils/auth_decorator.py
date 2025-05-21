@@ -8,7 +8,7 @@ from enum import Enum  # Pro kontrolu instance Enum
 from app import db  # Import db pro dotazy
 
 
-def access_control(required_roles=None, allow_owner=False, owner_id_param_name=None):
+def access_control(required_roles=None, allow_owner=False, owner_id_param_name=None, refresh=False):
     """
     Dekorátor pro ochranu endpointů na základě uživatelských rolí a/nebo vlastnictví.
     Vyžaduje, aby byl uživatel autentizován pomocí JWT.
@@ -45,7 +45,8 @@ def access_control(required_roles=None, allow_owner=False, owner_id_param_name=N
     def decorator(fn):
         @wraps(fn)
         def wrapper(*args, **kwargs):
-            verify_jwt_in_request()  # Ověří, že platný JWT je přítomen a neprošlý
+            # Ověří, že platný JWT je přítomen a neprošlý
+            verify_jwt_in_request(refresh=refresh)
 
             # Kontrola, zda je token na blacklistu
             jti = get_jwt()["jti"]
@@ -56,7 +57,11 @@ def access_control(required_roles=None, allow_owner=False, owner_id_param_name=N
             if token_is_blacklisted:
                 abort(401, message="Token byl odvolán (je na blacklistu).")
 
-            current_user_id_from_jwt = get_jwt_identity()  # Získá identitu uživatele z JWT
+            # Získá identitu uživatele z JWT
+            current_user_id_from_jwt = get_jwt_identity()
+
+            if required_roles is None and allow_owner == False:
+                return fn(*args, **kwargs)
 
             # Použití db.session.get pro načtení podle PK
             user = db.session.get(User, current_user_id_from_jwt)

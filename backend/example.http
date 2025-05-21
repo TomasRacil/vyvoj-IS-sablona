@@ -1,3 +1,7 @@
+@accesss_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc0NzgxODUwNiwianRpIjoiMWM1ZWUwYWYtMWE1MS00MzA4LTgzODItZWVhM2VhYjlmNzEyIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjIwNmM0YzRlLTY0ODktNDRiZC05NzFiLTg1ZTQ3YjA0NmU2ZSIsIm5iZiI6MTc0NzgxODUwNiwiY3NyZiI6ImZjMWRlZGQ3LTA5NWYtNDYxMy04ZTE5LTgwOGNiYjk2MDUzYSIsImV4cCI6MTc0NzgxOTQwNiwicmVmcmVzaF9qdGkiOiIxYjY4Yzk1Zi04MzFlLTRjMzEtYTM2Zi02ZWQ0NTc1MDJlZDAifQ.R3bWNZNPbXWzmy07dD506Cc5ro19L33-7mR75FuhE_s
+
+@refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc0NzgxODQ3MSwianRpIjoiMWI2OGM5NWYtODMxZS00YzMxLWEzNmYtNmVkNDU3NTAyZWQwIiwidHlwZSI6InJlZnJlc2giLCJzdWIiOiIyMDZjNGM0ZS02NDg5LTQ0YmQtOTcxYi04NWU0N2IwNDZlNmUiLCJuYmYiOjE3NDc4MTg0NzEsImNzcmYiOiI4MmJjM2RkOS01ZGEzLTQwODMtYmE1Yy1jYzA0MjhjNDJhM2EiLCJleHAiOjE3NTA0MTA0NzF9.alFLjYstdOXoxtNy5_VUtdeVY6CBv1Niqjc2U5MOS00
+
 ###
 GET http://localhost:5000/api/v1/users
 
@@ -12,6 +16,26 @@ content-type: application/json
 }
 
 ###
+POST http://localhost:5000/api/v1/login HTTP/1.1
+content-type: application/json
+
+{
+  "username_or_email": "admin",
+  "password": "heslo123"
+}
+
+###
+POST http://localhost:5000/api/v1/refresh HTTP/1.1
+content-type: application/json
+Authorization: Bearer {{refresh_token}}
+
+###
+POST http://localhost:5000/api/v1/logout HTTP/1.1
+content-type: application/json
+Authorization: Bearer {{accesss_token}}
+
+
+###
 GET http://localhost:5000/api/v1/books HTTP/1.1
 Content-type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc0NzIyOTc0MCwianRpIjoiOTNiMDU3M2QtNjIxNS00OWYyLWFmYWQtN2ZjNTQzZmQxNTgzIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjIiLCJuYmYiOjE3NDcyMjk3NDAsImNzcmYiOiJiNTA1YjBjYy1iMjY1LTRjYzEtOGQ3Ny1jZmZmZWZmOWE3OGUiLCJleHAiOjE3NDcyMzA2ODB9.jISBELcS_T-NEeWw0njsZ1CAgbvK39GNvE0j5KRdZgM
+Authorization: Bearer {{accesss_token}}

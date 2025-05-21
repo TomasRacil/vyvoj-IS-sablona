@@ -15,6 +15,8 @@ from app.schemas import BookSchema, BookCreateSchema, BookUpdateSchema
 # Výjimka pro odchytávání chyb databázové integrity.
 from sqlalchemy.exc import IntegrityError
 
+from app.utils.auth_decorator import access_control
+
 # --- Endpointy pro knihy ---
 
 
@@ -29,7 +31,7 @@ class BooksResource(MethodView):
     # GET /books: Vrátí seznam všech knih.
     # Odpověď bude HTTP 200 s polem objektů serializovaných pomocí BookSchema.
     @api_v1_bp.response(200, BookSchema(many=True))
-    @jwt_required()
+    @access_control()
     def get(self):
         """Získat seznam všech knih."""
         # Dotaz na všechny knihy, seřazené podle názvu.

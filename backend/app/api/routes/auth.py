@@ -1,7 +1,7 @@
 # Základní třída pro pohledy založené na třídách
 from flask import jsonify
 from flask.views import MethodView
-from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt, jwt_required
+from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt, get_jwt_identity, jwt_required, decode_token
 from flask_smorest import abort  # Funkce pro HTTP chyby a Blueprint z Flask-Smorest
 
 # Importy z vaší aplikace
@@ -37,10 +37,16 @@ class UserLogin(MethodView):
 
         if user and user.check_password(password):
             # Identita pro JWT může být ID uživatele
-            access_token = create_access_token(identity=str(user.id))
-            refresh_token = create_refresh_token(
+            refresh_token_string = create_refresh_token(
                 identity=user.id)  # Volitelný refresh token
-            return jsonify(access_token=access_token, refresh_token=refresh_token), 200
+
+            # Získáme JTI z refresh tokenu, abychom ho mohli přidat do access tokenu
+            decoded_refresh_token = decode_token(refresh_token_string)
+            refresh_jti = decoded_refresh_token['jti']
+
+            access_token = create_access_token(identity=str(
+                user.id), additional_claims={"refresh_jti": refresh_jti})
+            return jsonify(access_token=access_token, refresh_token=refresh_token_string), 200
 
         abort(401, message="Nesprávné uživatelské jméno/email nebo heslo.")
 
@@ -50,20 +56,41 @@ class UserLogout(MethodView):
     """
     Resource pro odhlášení uživatele (blacklistování JWT).
     """
-    # @access_control()  # Vyžaduje platný access token
 
+    @jwt_required()
     def post(self):
         """
-        Odhlásí uživatele přidáním JTI aktuálního tokenu na blacklist.
+        Odhlásí uživatele přidáním JTI aktuálního access tokenu na blacklist
+        a také JTI souvisejícího refresh tokenu, pokud je nalezen v claims access tokenu.
         """
-        jti = get_jwt()["jti"]
+        current_token_payload = get_jwt()
+        access_jti = current_token_payload["jti"]
+        # Získáme JTI refresh tokenu z claimu
+        refresh_jti_from_claim = current_token_payload.get("refresh_jti")
+
         try:
-            token_blacklist_entry = TokenBlacklist(jti=jti)
-            db.session.add(token_blacklist_entry)
+            blacklisted_tokens = []
+
+            # Přidání JTI access tokenu na blacklist
+            token_blacklist_entry_access = TokenBlacklist(jti=access_jti)
+            blacklisted_tokens.append(token_blacklist_entry_access)
+
+            # Přidání JTI refresh tokenu na blacklist, pokud existuje
+            if refresh_jti_from_claim:
+                token_blacklist_entry_refresh = TokenBlacklist(
+                    jti=refresh_jti_from_claim)
+                blacklisted_tokens.append(token_blacklist_entry_refresh)
+
+            db.session.add_all(blacklisted_tokens)
             db.session.commit()
-            return jsonify(message="Úspěšně odhlášeno."), 200
+
+            message = "Úspěšně odhlášeno. Access token byl zneplatněn."
+            if refresh_jti_from_claim:
+                message = "Úspěšně odhlášeno. Access token i související refresh token byly zneplatněny."
+            return jsonify(message=message), 200
         except Exception as e:
             db.session.rollback()
+            # Zde by mělo být logování chyby 'e'
             abort(500, message="Interní chyba serveru při odhlašování.")
 
 
@@ -121,6 +148,27 @@ class UserRegisterResource(MethodView):
             abort(500, message="Interní chyba serveru při ukládání uživatele.")
         # Vrácení nově vytvořeného uživatele (serializace proběhne automaticky)
         return user
+
+
+@api_v1_bp.route("/refresh", methods=["POST"])
+class TokenRefresh(MethodView):
+    """
+    Resource pro obnovení access tokenu pomocí refresh tokenu.
+    """
+    @access_control(refresh=True)
+    def post(self):
+        """
+        Obnoví access token.
+        Očekává platný refresh token v Authorization hlavičce (Bearer token).
+        """
+        current_user_identity = get_jwt_identity()
+        # Získáme JTI z aktuálního refresh tokenu (payload je již dekódovaný díky @jwt_required)
+        current_refresh_token_payload = get_jwt()
+        refresh_jti = current_refresh_token_payload['jti']
+
+        new_access_token = create_access_token(
+            identity=current_user_identity, additional_claims={"refresh_jti": refresh_jti})
+        return jsonify(access_token=new_access_token), 200
 
 
 @api_v1_bp.route("/users/<uuid:user_id>/roles")

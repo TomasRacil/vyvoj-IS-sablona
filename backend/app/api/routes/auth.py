@@ -50,7 +50,8 @@ class UserLogout(MethodView):
     """
     Resource pro odhlášení uživatele (blacklistování JWT).
     """
-    @access_control()  # Vyžaduje platný access token
+    # @access_control()  # Vyžaduje platný access token
+
     def post(self):
         """
         Odhlásí uživatele přidáním JTI aktuálního tokenu na blacklist.
@@ -131,7 +132,7 @@ class UserRolesManagementResource(MethodView):
 
     @api_v1_bp.arguments(UserRoleAssignSchema)
     @api_v1_bp.response(200, UserSchema)  # Vrátí aktualizovaného uživatele
-    # @access_control(required_roles=[UserRoleEnum.ADMIN])
+    @access_control(required_roles=[UserRoleEnum.ADMIN])
     def post(self, role_data, user_id):
         """
         Přiřadit roli uživateli.
@@ -158,7 +159,7 @@ class UserRolesManagementResource(MethodView):
         return user
 
     @api_v1_bp.response(200, RoleSchema(many=True))
-    @access_control(required_roles=[UserRoleEnum.ADMIN])
+    # @access_control(required_roles=[UserRoleEnum.ADMIN])
     def get(self, user_id):
         """
         Získat všechny role konkrétního uživatele.
@@ -176,7 +177,7 @@ class UserRoleDetailManagementResource(MethodView):
     Vyžaduje administrátorská práva.
     """
     @api_v1_bp.response(204)
-    @access_control(required_roles=[UserRoleEnum.ADMIN])
+    # @access_control(required_roles=[UserRoleEnum.ADMIN])
     def delete(self, user_id, role_id):
         """
         Odebrat roli uživateli.

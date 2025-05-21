@@ -19,7 +19,7 @@ class UserSchema(Schema):
     # `dump_only=True`: Atribut bude zahrnut POUZE při serializaci (objekt -> JSON).
     # Při deserializaci (JSON -> objekt) bude ignorován.
     # Ideální pro ID generovaná databází nebo časová razítka vytvoření.
-    id = fields.Int(dump_only=True)
+    id = fields.UUID(dump_only=True)
 
     # `required=True`: Atribut je povinný při deserializaci (pokud by schéma bylo použito pro vstup).
     # Při serializaci musí mít objekt tento atribut (jinak chyba).

@@ -9,7 +9,7 @@ from app.schemas import UserCreateSchema, UserSchema, RoleSchema, UserRoleAssign
 from app.db import db  # Import instance SQLAlchemy databáze
 from sqlalchemy.exc import IntegrityError  # Pro odchytávání chyb unikátnosti
 from app.api import api_v1_bp
-from app.utils.auth_decorator import access_control  # Dekorátor pro řízení přístupu
+from app.utils.auth_decorator import access_control
 from app.utils.enums import UserRoleEnum  # Enum pro role
 
 # --- Endpointy pro uživatele ---
@@ -60,6 +60,7 @@ class UserResource(MethodView):
         UserSchema
     )  # Předpokládáme UserSchema pro update, možná budete chtít UserUpdateSchema
     @api_v1_bp.response(200, UserSchema)
+    @access_control(UserRoleEnum.EDITOR, True, "user_id")
     def put(self, update_data, user_id):
         """
         Aktualizovat existujícího uživatele (celý záznam).
@@ -103,79 +104,4 @@ class UserResource(MethodView):
             abort(500, message="Interní chyba serveru při mazání uživatele.")
 
         # Při úspěšném smazání se vrací prázdná odpověď s kódem 204
-        return ""
-
-
-@api_v1_bp.route("/users/<uuid:user_id>/roles")
-class UserRolesResource(MethodView):
-    """
-    Resource pro správu rolí konkrétního uživatele.
-    """
-
-    @api_v1_bp.arguments(UserRoleAssignSchema)
-    @api_v1_bp.response(200, UserSchema)
-    @access_control(required_roles=[UserRoleEnum.ADMIN])
-    def post(self, role_data, user_id):
-        """
-        Přiřadit roli uživateli.
-        Vyžaduje administrátorská práva.
-        """
-        user = db.session.get(User, user_id)
-        if not user:
-            abort(404, message="Uživatel nebyl nalezen.")
-
-        role_id_to_assign = role_data["role_id"]
-        role = db.session.get(Role, role_id_to_assign)
-        if not role:
-            abort(
-                404, message=f"Role s ID {role_id_to_assign} nebyla nalezena.")
-
-        if role not in user.roles.all():  # user.roles je lazy='dynamic'
-            user.roles.append(role)
-            try:
-                db.session.commit()
-            except Exception as e:
-                db.session.rollback()
-                # Zde by mělo být logování chyby 'e'
-                abort(500, message="Interní chyba serveru při přiřazování role.")
-        # Pokud uživatel roli již má, neprovádíme žádnou akci, vrátíme aktuální stav uživatele.
-        return user
-
-    @api_v1_bp.response(200, RoleSchema(many=True))
-    # Případně i vlastník: allow_owner=True, owner_id_param_name="user_id"
-    @access_control(required_roles=[UserRoleEnum.ADMIN])
-    def get(self, user_id):
-        """
-        Získat všechny role konkrétního uživatele.
-        Vyžaduje administrátorská práva.
-        """
-        user = db.session.get(User, user_id)
-        if not user:
-            abort(404, message="Uživatel nebyl nalezen.")
-        return user.roles.all()  # .all() protože user.roles je lazy='dynamic'
-
-
-@api_v1_bp.route("/users/<uuid:user_id>/roles/<int:role_id>")
-class UserRoleDetailResource(MethodView):
-    """
-    Resource pro odebrání konkrétní role uživateli.
-    """
-    @api_v1_bp.response(204)
-    @access_control(required_roles=[UserRoleEnum.ADMIN])
-    def delete(self, user_id, role_id):
-        """
-        Odebrat roli uživateli.
-        Vyžaduje administrátorská práva.
-        """
-        user = db.session.get(User, user_id)
-        if not user:
-            abort(404, message="Uživatel nebyl nalezen.")
-
-        role_to_remove = user.roles.filter(Role.id == role_id).first()
-        if not role_to_remove:
-            abort(
-                404, message=f"Uživatel nemá přiřazenou roli s ID {role_id} nebo role neexistuje.")
-
-        user.roles.remove(role_to_remove)
-        db.session.commit()
         return ""

@@ -1,8 +1,10 @@
 from app import db  # Import instance SQLAlchemy z db.py
 from sqlalchemy.sql import func  # Import SQL funkcí (např. pro server_default)
-
-# Import modulu datetime (i když není přímo použitý, může se hodit)
-import datetime
+from sqlalchemy.dialects.postgresql import UUID  # Pro typ UUID v PostgreSQL
+from passlib.hash import pbkdf2_sha256 as sha256
+import uuid  # Pro generování UUID
+from .user_roles_table import user_roles_table  # Import asociační tabulky
+# from .role import Role # Import modelu Role - lze použít stringový odkaz v relationship
 
 # from werkzeug.security import generate_password_hash, check_password_hash # Příklad pro hashování hesel
 
@@ -17,8 +19,10 @@ class User(db.Model):
     # Explicitní pojmenování tabulky v databázi - dobrá praxe
     __tablename__ = "users"
 
-    # Primární klíč - unikátní identifikátor záznamu
-    id = db.Column(db.Integer, primary_key=True)
+    # Primární klíč - UUID
+    # Používáme UUID(as_uuid=True) aby SQLAlchemy pracovalo s Python uuid objekty
+    # default=uuid.uuid4 zajistí generování nového UUID při vytvoření záznamu
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     # Sloupec pro uživatelské jméno (řetězec, max 80 znaků, unikátní, povinný)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -32,18 +36,42 @@ class User(db.Model):
     created_at = db.Column(db.DateTime(timezone=True),
                            server_default=func.now())
 
-    # Sloupec pro hashované heslo (řetězec, délka závisí na hashovacím algoritmu)
-    # Je KRITICKY DŮLEŽITÉ ukládat pouze hash hesla, nikdy ne čisté heslo!
-    # password_hash = db.Column(db.String(128), nullable=False) # Heslo by mělo být povinné
+    # Heslo by mělo být povinné
+    password_hash = db.Column(db.String(128), nullable=False)
 
-    # Metody pro práci s heslem (příklad s Werkzeug)
-    # def set_password(self, password):
-    #     """Generuje hash hesla a uloží ho."""
-    #     self.password_hash = generate_password_hash(password)
-    #
-    # def check_password(self, password):
-    #     """Kontroluje, zda zadané heslo odpovídá uloženému hashi."""
-    #     return check_password_hash(self.password_hash, password)
+    # Vztah M:N k rolím
+    # 'Role' je název třídy modelu na druhé straně vztahu.
+    # secondary=user_roles_table určuje asociační tabulku.
+    # back_populates='users' propojuje tento vztah s atributem 'users' v modelu Role.
+    # lazy='dynamic' umožňuje další filtrování/řazení před načtením dat.
+    roles = db.relationship("Role", secondary=user_roles_table,
+                            back_populates="users", lazy="dynamic")
+
+    @property
+    def password(self):
+        # Heslo by se nemělo číst přímo
+        raise AttributeError('password is not a readable attribute')
+
+    @password.setter
+    def password(self, password):
+        self.password_hash = sha256.hash(password)
+
+    def check_password(self, password):
+        return sha256.verify(password, self.password_hash)
+
+    def has_role(self, role_name_or_enum):
+        """
+        Kontroluje, zda má uživatel danou roli.
+        :param role_name_or_enum: Název role (string) nebo člen UserRoleEnum.
+        """
+        from app.utils.enums import UserRoleEnum  # Lokální import pro Enum
+        if isinstance(role_name_or_enum, UserRoleEnum):
+            role_name = role_name_or_enum.value
+        else:
+            role_name = str(role_name_or_enum)
+
+        # Použijeme .filter() pro dotaz do DB. Pro jednoduchou kontrolu existence je any() efektivní.
+        return self.roles.filter_by(name=role_name).first() is not None
 
     # Metoda pro reprezentaci objektu jako řetězce (užitečné pro ladění)
     def __repr__(self):

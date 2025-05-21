@@ -3,12 +3,14 @@ from flask.views import MethodView
 from flask_smorest import abort  # Funkce pro HTTP chyby a Blueprint z Flask-Smorest
 
 # Importy z vaší aplikace
-from app.models import User  # Import databázového modelu User
+from app.models import User, Role  # Import databázových modelů User a Role
 # Import Marshmallow schémat
-from app.schemas import UserCreateSchema, UserSchema
+from app.schemas import UserCreateSchema, UserSchema, RoleSchema, UserRoleAssignSchema
 from app.db import db  # Import instance SQLAlchemy databáze
 from sqlalchemy.exc import IntegrityError  # Pro odchytávání chyb unikátnosti
 from app.api import api_v1_bp
+from app.utils.auth_decorator import access_control  # Dekorátor pro řízení přístupu
+from app.utils.enums import UserRoleEnum  # Enum pro role
 
 # --- Endpointy pro uživatele ---
 
@@ -35,56 +37,8 @@ class UsersResource(MethodView):
         # Flask-Smorest se postará o serializaci pomocí UserSchema(many=True)
         return users
 
-    @api_v1_bp.arguments(UserCreateSchema)
-    # Dekorátor definuje očekávaná vstupní data v těle požadavku.
-    # - UserCreateSchema: Určuje Marshmallow schéma pro validaci vstupních dat.
-    # - Pokud validace selže, automaticky vrátí chybu 422 Unprocessable Entity.
-    # - Validovaná data jsou předána jako argument metody (zde 'new_user_data').
-    @api_v1_bp.response(201, UserSchema)
-    # Dekorátor definuje úspěšnou odpověď pro vytvoření (HTTP 201 Created).
-    # - UserSchema: Určuje, že odpověď bude jeden objekt serializovaný pomocí UserSchema.
-    def post(self, new_user_data):
-        """
-        Vytvořit nového uživatele.
-        Očekává data podle UserCreateSchema v těle POST požadavku.
-        """
-        # Kontrola, zda uživatel s daným emailem nebo username již neexistuje
-        if User.query.filter(
-            (User.username == new_user_data["username"])
-            | (User.email == new_user_data["email"])
-        ).first():
-            abort(
-                409, message="Uživatel s tímto jménem nebo emailem již existuje."
-            )  # Conflict
 
-        # Vytvoření instance modelu User z validovaných dat
-        user = User(**new_user_data)
-
-        # !!! DŮLEŽITÉ: Zde by mělo dojít k hashování hesla před uložením!
-        # Např. pomocí knihovny passlib nebo werkzeug.security
-        # user.set_password(new_user_data['password']) # Předpokládá metodu v modelu User
-
-        try:
-            db.session.add(user)
-            db.session.commit()
-        except IntegrityError as e:  # Specifická chyba pro porušení unikátnosti
-            db.session.rollback()
-            # Logování chyby by bylo vhodné
-            # print(f"IntegrityError: {e}")
-            abort(
-                409,  # Conflict - lepší než 500, pokud jde o unikátnost
-                message=f"Chyba při ukládání: Uživatel s těmito údaji již pravděpodobně existuje.",
-            )
-        except Exception as e:  # Obecná chyba pro jiné problémy
-            db.session.rollback()
-            # Logování chyby
-            # print(f"Exception: {e}")
-            abort(500, message="Interní chyba serveru při ukládání uživatele.")
-        # Vrácení nově vytvořeného uživatele (serializace proběhne automaticky)
-        return user
-
-
-@api_v1_bp.route("/users/<int:user_id>")  # Cesta s parametrem user_id
+@api_v1_bp.route("/users/<uuid:user_id>")  # Změna typu user_id na uuid
 class UserResource(MethodView):
     """
     Resource pro operace s konkrétním uživatelem (/users/<id>).
@@ -149,4 +103,79 @@ class UserResource(MethodView):
             abort(500, message="Interní chyba serveru při mazání uživatele.")
 
         # Při úspěšném smazání se vrací prázdná odpověď s kódem 204
+        return ""
+
+
+@api_v1_bp.route("/users/<uuid:user_id>/roles")
+class UserRolesResource(MethodView):
+    """
+    Resource pro správu rolí konkrétního uživatele.
+    """
+
+    @api_v1_bp.arguments(UserRoleAssignSchema)
+    @api_v1_bp.response(200, UserSchema)
+    @access_control(required_roles=[UserRoleEnum.ADMIN])
+    def post(self, role_data, user_id):
+        """
+        Přiřadit roli uživateli.
+        Vyžaduje administrátorská práva.
+        """
+        user = db.session.get(User, user_id)
+        if not user:
+            abort(404, message="Uživatel nebyl nalezen.")
+
+        role_id_to_assign = role_data["role_id"]
+        role = db.session.get(Role, role_id_to_assign)
+        if not role:
+            abort(
+                404, message=f"Role s ID {role_id_to_assign} nebyla nalezena.")
+
+        if role not in user.roles.all():  # user.roles je lazy='dynamic'
+            user.roles.append(role)
+            try:
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                # Zde by mělo být logování chyby 'e'
+                abort(500, message="Interní chyba serveru při přiřazování role.")
+        # Pokud uživatel roli již má, neprovádíme žádnou akci, vrátíme aktuální stav uživatele.
+        return user
+
+    @api_v1_bp.response(200, RoleSchema(many=True))
+    # Případně i vlastník: allow_owner=True, owner_id_param_name="user_id"
+    @access_control(required_roles=[UserRoleEnum.ADMIN])
+    def get(self, user_id):
+        """
+        Získat všechny role konkrétního uživatele.
+        Vyžaduje administrátorská práva.
+        """
+        user = db.session.get(User, user_id)
+        if not user:
+            abort(404, message="Uživatel nebyl nalezen.")
+        return user.roles.all()  # .all() protože user.roles je lazy='dynamic'
+
+
+@api_v1_bp.route("/users/<uuid:user_id>/roles/<int:role_id>")
+class UserRoleDetailResource(MethodView):
+    """
+    Resource pro odebrání konkrétní role uživateli.
+    """
+    @api_v1_bp.response(204)
+    @access_control(required_roles=[UserRoleEnum.ADMIN])
+    def delete(self, user_id, role_id):
+        """
+        Odebrat roli uživateli.
+        Vyžaduje administrátorská práva.
+        """
+        user = db.session.get(User, user_id)
+        if not user:
+            abort(404, message="Uživatel nebyl nalezen.")
+
+        role_to_remove = user.roles.filter(Role.id == role_id).first()
+        if not role_to_remove:
+            abort(
+                404, message=f"Uživatel nemá přiřazenou roli s ID {role_id} nebo role neexistuje.")
+
+        user.roles.remove(role_to_remove)
+        db.session.commit()
         return ""

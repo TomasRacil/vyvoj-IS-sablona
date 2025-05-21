@@ -1,6 +1,7 @@
 # Základní třída pro pohledy založené na třídách.
 from flask.views import MethodView
 # Funkce pro generování HTTP chybových odpovědí.
+from flask_jwt_extended import jwt_required
 from flask_smorest import abort
 
 # Import blueprintu pro registraci rout.
@@ -28,6 +29,7 @@ class BooksResource(MethodView):
     # GET /books: Vrátí seznam všech knih.
     # Odpověď bude HTTP 200 s polem objektů serializovaných pomocí BookSchema.
     @api_v1_bp.response(200, BookSchema(many=True))
+    @jwt_required()
     def get(self):
         """Získat seznam všech knih."""
         # Dotaz na všechny knihy, seřazené podle názvu.

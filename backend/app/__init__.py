@@ -1,3 +1,4 @@
+from flask_jwt_extended import JWTManager
 from marshmallow import Schema  # Základní třída pro schémata z knihovny Marshmallow
 # Plugin pro integraci Marshmallow schémat s APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
@@ -86,6 +87,8 @@ def create_app(config_name=None, config_override=None):
     # Inicializace Flask-Migrate (nástroje pro správu databázových migrací)
     migrate.init_app(app, db)
 
+    jwt = JWTManager(app)
+
     # Inicializace Flask-Smorest.
     # Flask-Smorest se stará o generování OpenAPI dokumentace, validaci požadavků
     # a serializaci odpovědí pomocí Marshmallow schémat.
@@ -116,6 +119,7 @@ def create_app(config_name=None, config_override=None):
     # vaši aplikaci a její kontext. Toto usnadňuje ladění a testování.
     # Funkce označená `@app.shell_context_processor` vrací slovník,
     # jehož klíče budou automaticky dostupné jako proměnné v `flask shell`.
+
     @app.shell_context_processor
     def make_shell_context():
         # Zpřístupníme instanci databáze (db) a například model User.

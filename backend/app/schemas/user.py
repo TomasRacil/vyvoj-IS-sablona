@@ -54,8 +54,15 @@ class UserCreateSchema(Schema):
     # Nebude nikdy zahrnut při serializaci (objekt -> JSON).
     # Ideální pro citlivá data jako hesla, která přijímáme, ale nikdy neposíláme zpět v odpovědi.
     # `validate=validate.Length(min=8)`: Heslo musí mít minimálně 8 znaků.
-    # password = fields.Str(
-    #     required=True,
-    #     load_only=True,
-    #     validate=validate.Length(min=8, error="Heslo musí mít alespoň 8 znaků.")
-    # )
+    password = fields.Str(
+        required=True,
+        load_only=True,
+        validate=validate.Length(
+            min=8, error="Heslo musí mít alespoň 8 znaků.")
+    )
+
+
+class UserLoginSchema(Schema):
+    # Umožní přihlášení jménem nebo emailem
+    username_or_email = fields.Str(required=True)
+    password = fields.Str(required=True, load_only=True)

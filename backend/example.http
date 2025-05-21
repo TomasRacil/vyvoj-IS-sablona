@@ -10,3 +10,8 @@ content-type: application/json
     "username": "test",
     "name":""
 }
+
+###
+GET http://localhost:5000/api/v1/books HTTP/1.1
+Content-type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc0NzIyOTc0MCwianRpIjoiOTNiMDU3M2QtNjIxNS00OWYyLWFmYWQtN2ZjNTQzZmQxNTgzIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjIiLCJuYmYiOjE3NDcyMjk3NDAsImNzcmYiOiJiNTA1YjBjYy1iMjY1LTRjYzEtOGQ3Ny1jZmZmZWZmOWE3OGUiLCJleHAiOjE3NDcyMzA2ODB9.jISBELcS_T-NEeWw0njsZ1CAgbvK39GNvE0j5KRdZgM

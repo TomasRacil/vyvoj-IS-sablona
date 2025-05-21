@@ -67,7 +67,8 @@ def access_control(required_roles=None, allow_owner=False, owner_id_param_name=N
 
             # 1. Kontrola vlastnictví
             if allow_owner:  # owner_id_param_name je již validován
-                target_owner_id_from_request = kwargs.get(owner_id_param_name)
+                target_owner_id_from_request = str(
+                    kwargs.get(owner_id_param_name))
                 if target_owner_id_from_request is not None:
                     # Předpokládáme, že current_user_id_from_jwt (z tokenu) a
                     # target_owner_id_from_request (z URL parametru, např. <int:user_id>)

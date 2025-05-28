@@ -128,3 +128,32 @@ backend/
 * **Chybové Stavy:** V API endpointech používejte `abort(http_status_code, message="...")` z `flask_smorest` pro vracení standardizovaných chybových odpovědí (např. 404 Not Found, 400 Bad Request, 409 Conflict).
 
 Tento README poskytuje základní přehled. Pro hlubší pochopení jednotlivých technologií doporučuji prostudovat jejich oficiální dokumentaci.
+
+## Prezentace backendu
+
+Během prezentace vašeho backendového řešení se zaměřte na následující body. Každý bod nejprve prakticky ukažte (např. pomocí Swagger UI, Postman, nebo `curl` příkazů) a následně vysvětlete klíčové části kódu, které danou funkcionalitu implementují.
+
+1.  **Představení projektu:**
+    *   Stručně představte zadání vašeho projektu.
+    *   Ukažte UML diagramy (zejména class diagram a use case diagram), ze kterých jste vycházeli při návrhu a implementaci backendu.
+
+2.  **Autentizace a Autorizace:**
+    *   Demonstrujte proces přihlášení uživatele (autentizace).
+    *   Ukažte, jakým způsobem chráníte určité endpointy nebo zdroje tak, aby k nim měli přístup pouze oprávnění uživatelé (autorizace).
+    *   Vysvětlete implementaci (např. ukládání hesel, generování a validace tokenů, role, oprávnění).
+
+3.  **Dokumentace API:**
+    *   Předveďte dokumentaci vašeho API. Pokud je generovaná automaticky (např. Swagger UI/OpenAPI z Flask-Smorest), ukažte ji. Pokud máte i manuálně vytvořenou dokumentaci, zmiňte ji.
+
+4.  **Implementace ORM (Object-Relational Mapper):**
+    *   Ukažte definice vašich SQLAlchemy modelů (`app/models.py`).
+    *   Demonstrujte, jak pomocí ORM přistupujete k databázi (vytváření, čtení, úprava, mazání záznamů) v rámci logiky vašich API endpointů.
+
+5.  **Databázové Migrace:**
+    *   Vysvětlete, jak spravujete změny ve schématu databáze (např. pomocí Alembic).
+    *   Ukažte příklad migračního skriptu a demonstrujte (nebo vysvětlete) proces aplikace migrace na databázi.
+
+6.  **Serializace a Validace Dat:**
+    *   Předveďte, jak vaše API zpracovává vstupní data (např. JSON payload v POST/PUT požadavcích) a jak je validuje.
+    *   Ukažte, jak jsou data z databáze (nebo jiné interní objekty) transformována do formátu pro odpověď API (např. JSON).
+    *   Vysvětlete použité nástroje (např. Marshmallow schémata v `app/schemas.py`) nebo vlastní řešení.

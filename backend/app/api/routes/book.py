@@ -2,10 +2,8 @@
 from flask.views import MethodView
 # Funkce pro generování HTTP chybových odpovědí.
 from flask_jwt_extended import jwt_required
-from flask_smorest import abort
+from flask_smorest import abort, Blueprint
 
-# Import blueprintu pro registraci rout.
-from app.api import api_v1_bp
 # Import instance SQLAlchemy databáze.
 from app.db import db
 # Import databázových modelů Book, Author, Publisher.
@@ -19,8 +17,11 @@ from app.utils.auth_decorator import access_control
 
 # --- Endpointy pro knihy ---
 
+book_bp = Blueprint("books", __name__, url_prefix="/books",
+                    description="Endpointy pro správu knihy")
 
-@api_v1_bp.route("/books")
+
+@book_bp.route("/")
 class BooksResource(MethodView):
     """
     Resource pro operace s kolekcí knih.
@@ -30,7 +31,7 @@ class BooksResource(MethodView):
 
     # GET /books: Vrátí seznam všech knih.
     # Odpověď bude HTTP 200 s polem objektů serializovaných pomocí BookSchema.
-    @api_v1_bp.response(200, BookSchema(many=True))
+    @book_bp.response(200, BookSchema(many=True))
     @access_control()
     def get(self):
         """Získat seznam všech knih."""
@@ -41,9 +42,9 @@ class BooksResource(MethodView):
 
     # POST /books: Vytvoří novou knihu.
     # Očekává data v těle požadavku validovaná pomocí BookCreateSchema.
-    @api_v1_bp.arguments(BookCreateSchema)
+    @book_bp.arguments(BookCreateSchema)
     # Úspěšná odpověď bude HTTP 201 s nově vytvořenou knihou serializovanou pomocí BookSchema.
-    @api_v1_bp.response(201, BookSchema)
+    @book_bp.response(201, BookSchema)
     def post(self, new_book_data):
         """
         Vytvořit novou knihu.
@@ -108,7 +109,7 @@ class BooksResource(MethodView):
         return book
 
 
-@api_v1_bp.route("/books/<int:book_id>")
+@book_bp.route("/<int:book_id>")
 class BookResource(MethodView):
     """
     Resource pro operace s konkrétní knihou, identifikovanou pomocí ID.
@@ -117,7 +118,7 @@ class BookResource(MethodView):
     """
 
     # GET /books/<book_id>: Vrátí detail knihy.
-    @api_v1_bp.response(200, BookSchema)
+    @book_bp.response(200, BookSchema)
     def get(self, book_id):
         """Získat detail knihy podle ID."""
         book = db.session.get(Book, book_id)
@@ -128,9 +129,9 @@ class BookResource(MethodView):
 
     # PUT /books/<book_id>: Aktualizuje existující knihu.
     # Očekává data validovaná pomocí BookUpdateSchema.
-    @api_v1_bp.arguments(BookUpdateSchema)
+    @book_bp.arguments(BookUpdateSchema)
     # Úspěšná odpověď bude HTTP 200 s aktualizovanou knihou.
-    @api_v1_bp.response(200, BookSchema)
+    @book_bp.response(200, BookSchema)
     def put(self, update_data, book_id):
         """
         Aktualizovat existující knihu.
@@ -202,7 +203,7 @@ class BookResource(MethodView):
 
     # DELETE /books/<book_id>: Smaže knihu.
     # Úspěšná odpověď bude HTTP 204 No Content.
-    @api_v1_bp.response(204)
+    @book_bp.response(204)
     def delete(self, book_id):
         """Smazat knihu podle ID."""
         book = db.session.get(Book, book_id)

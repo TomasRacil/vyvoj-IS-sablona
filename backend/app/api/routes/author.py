@@ -1,10 +1,7 @@
 # Základní třída pro pohledy založené na třídách
 from flask.views import MethodView
 # Funkce pro generování HTTP chybových odpovědí
-from flask_smorest import abort
-
-# Předpokládáme, že api_v1_bp je definováno v app.api (Import blueprintu)
-from app.api import api_v1_bp
+from flask_smorest import abort, Blueprint
 
 # Import modelů a schémat
 from app.models import Author  # Import databázového modelu Author
@@ -18,15 +15,18 @@ from sqlalchemy.exc import IntegrityError
 
 # Dekorátor registruje třídu pro danou cestu na blueprintu
 
+author_bp = Blueprint("authors", __name__, url_prefix="/authors",
+                      description="Blueprint zajišťující operace s autory")
 
-@api_v1_bp.route("/authors")
+
+@author_bp.route("/")
 class AuthorsResource(MethodView):
     """
     Resource pro operace s kolekcí autorů (/authors).
     Zpracovává GET (seznam) a POST (vytvoření).
     """
 
-    @api_v1_bp.response(200, AuthorSchema(many=True))
+    @author_bp.response(200, AuthorSchema(many=True))
     # Dekorátor definuje úspěšnou odpověď (HTTP 200 OK).
     # - AuthorSchema(many=True): Určuje, že odpověď bude seznam objektů,
     #   které budou serializovány pomocí AuthorSchema.
@@ -40,12 +40,12 @@ class AuthorsResource(MethodView):
         # Flask-Smorest se postará o serializaci pomocí AuthorSchema(many=True)
         return authors
 
-    @api_v1_bp.arguments(AuthorCreateSchema)
+    @author_bp.arguments(AuthorCreateSchema)
     # Dekorátor definuje očekávaná vstupní data v těle požadavku.
     # - AuthorCreateSchema: Určuje Marshmallow schéma pro validaci vstupních dat.
     # - Pokud validace selže, automaticky vrátí chybu 422 Unprocessable Entity.
     # - Validovaná data jsou předána jako argument metody (zde 'new_author_data').
-    @api_v1_bp.response(201, AuthorSchema)
+    @author_bp.response(201, AuthorSchema)
     # Dekorátor definuje úspěšnou odpověď pro vytvoření (HTTP 201 Created).
     # - AuthorSchema: Určuje, že odpověď bude jeden objekt serializovaný pomocí AuthorSchema.
     def post(self, new_author_data):
@@ -85,14 +85,14 @@ class AuthorsResource(MethodView):
 # Dekorátor registruje třídu pro danou cestu s parametrem na blueprintu
 
 
-@api_v1_bp.route("/authors/<int:author_id>")
+@author_bp.route("/<int:author_id>")
 class AuthorResource(MethodView):
     """
     Resource pro operace s konkrétním autorem (/authors/<id>).
     Zpracovává GET (detail), PUT (aktualizace), DELETE (smazání).
     """
 
-    @api_v1_bp.response(200, AuthorSchema)
+    @author_bp.response(200, AuthorSchema)
     # Odpověď pro úspěšné nalezení (HTTP 200 OK), serializovaná AuthorSchema.
     def get(self, author_id):
         """Získat detail autora podle ID."""
@@ -106,10 +106,10 @@ class AuthorResource(MethodView):
         return author
 
     # Zde by mohlo být AuthorUpdateSchema, pokud se liší
-    @api_v1_bp.arguments(AuthorCreateSchema)
+    @author_bp.arguments(AuthorCreateSchema)
     # Dekorátor definuje očekávaná vstupní data v těle požadavku pro aktualizaci.
     # - AuthorCreateSchema (nebo lépe AuthorUpdateSchema): Určuje Marshmallow schéma pro validaci.
-    @api_v1_bp.response(200, AuthorSchema)
+    @author_bp.response(200, AuthorSchema)
     # Dekorátor definuje úspěšnou odpověď pro aktualizaci (HTTP 200 OK).
     def put(self, update_data, author_id):
         """
@@ -143,7 +143,7 @@ class AuthorResource(MethodView):
         # Vrácení aktualizovaného autora (serializace proběhne automaticky).
         return author
 
-    @api_v1_bp.response(204)
+    @author_bp.response(204)
     # Dekorátor definuje úspěšnou odpověď pro smazání (HTTP 204 No Content).
     def delete(self, author_id):
         """Smazat autora podle ID."""

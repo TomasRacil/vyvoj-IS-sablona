@@ -1,7 +1,7 @@
 # Základní třída pro pohledy založené na třídách
 from flask.views import MethodView
 # Funkce pro generování HTTP chybových odpovědí
-from flask_smorest import abort
+from flask_smorest import abort, Blueprint
 
 # Importy z vaší aplikace
 from app.models import Publisher  # Import databázového modelu Publisher
@@ -10,15 +10,16 @@ from app.schemas import PublisherSchema, PublisherCreateSchema, PublisherUpdateS
 from app.db import db  # Import instance SQLAlchemy databáze
 # Výjimka pro odchytávání chyb databázové integrity
 from sqlalchemy.exc import IntegrityError  # Pro odchytávání chyb unikátnosti
-# Import blueprintu
-from app.api import api_v1_bp
 
 # --- Endpointy pro vydavatele ---
+
+publisher_bp = Blueprint("publishers", __name__, url_prefix="/publishers",
+                         description="Blueprint zajišťující operace s vydavateli")
 
 # Registrace třídy PublishersResource pro URL cestu "/publishers"
 
 
-@api_v1_bp.route("/publishers")
+@publisher_bp.route("/")
 class PublishersResource(MethodView):
     """
     Resource pro operace s kolekcí vydavatelů.
@@ -27,7 +28,7 @@ class PublishersResource(MethodView):
     """
 
     # Dekorátor pro GET: odpověď bude HTTP 200 s polem objektů serializovaných PublisherSchema.
-    @api_v1_bp.response(200, PublisherSchema(many=True))
+    @publisher_bp.response(200, PublisherSchema(many=True))
     def get(self):
         """Získat seznam všech vydavatelů."""
         # Vytvoření dotazu pro výběr všech vydavatelů, seřazených podle jména.
@@ -38,9 +39,9 @@ class PublishersResource(MethodView):
         return publishers
 
     # Dekorátor pro POST: očekává data validovaná PublisherCreateSchema.
-    @api_v1_bp.arguments(PublisherCreateSchema)
+    @publisher_bp.arguments(PublisherCreateSchema)
     # Dekorátor pro POST: úspěšná odpověď bude HTTP 201 s jedním objektem serializovaným PublisherSchema.
-    @api_v1_bp.response(201, PublisherSchema)
+    @publisher_bp.response(201, PublisherSchema)
     def post(self, new_publisher_data):
         """
         Vytvořit nového vydavatele.
@@ -81,11 +82,11 @@ class PublishersResource(MethodView):
         return publisher
 
 # Registrace třídy PublisherResource pro URL cestu "/publishers/<int:publisher_id>"
-# @api_v1_bp.route("/publishers/<int:publisher_id>") # Chyba v původním kódu, mělo by být zde
+# @publisher_bp.route("/publishers/<int:publisher_id>") # Chyba v původním kódu, mělo by být zde
 # Opraveno: Přesunuto na správné místo před definici třídy
 
 
-@api_v1_bp.route("/publishers/<int:publisher_id>")
+@publisher_bp.route("/<int:publisher_id>")
 class PublisherResource(MethodView):
     """
     Resource pro operace s konkrétním vydavatelem, identifikovaným pomocí ID.
@@ -93,7 +94,7 @@ class PublisherResource(MethodView):
     Zpracovává GET (detail), PUT (aktualizace), DELETE (smazání).
     """
     # Dekorátor pro GET: odpověď bude HTTP 200 s jedním objektem serializovaným PublisherSchema.
-    @api_v1_bp.response(200, PublisherSchema)
+    @publisher_bp.response(200, PublisherSchema)
     def get(self, publisher_id):
         """Získat detail vydavatele podle ID."""
         # Načtení vydavatele podle primárního klíče.
@@ -104,9 +105,9 @@ class PublisherResource(MethodView):
         return publisher
 
     # Dekorátor pro PUT: očekává data validovaná PublisherUpdateSchema.
-    @api_v1_bp.arguments(PublisherUpdateSchema)
+    @publisher_bp.arguments(PublisherUpdateSchema)
     # Dekorátor pro PUT: úspěšná odpověď bude HTTP 200 s jedním objektem serializovaným PublisherSchema.
-    @api_v1_bp.response(200, PublisherSchema)
+    @publisher_bp.response(200, PublisherSchema)
     def put(self, update_data, publisher_id):
         """
         Aktualizovat existujícího vydavatele (celý záznam).
@@ -141,7 +142,7 @@ class PublisherResource(MethodView):
         return publisher
 
     # Dekorátor pro DELETE: úspěšná odpověď bude HTTP 204 No Content.
-    @api_v1_bp.response(204)
+    @publisher_bp.response(204)
     def delete(self, publisher_id):
         """Smazat vydavatele podle ID."""
         # Načtení vydavatele podle ID.

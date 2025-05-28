@@ -2,7 +2,8 @@
 from flask import jsonify
 from flask.views import MethodView
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt, get_jwt_identity, jwt_required, decode_token
-from flask_smorest import abort  # Funkce pro HTTP chyby a Blueprint z Flask-Smorest
+# Funkce pro HTTP chyby a Blueprint z Flask-Smorest
+from flask_smorest import abort, Blueprint
 
 # Importy z vaší aplikace
 from app.models import User, Role  # Import databázových modelů
@@ -14,15 +15,18 @@ from app.schemas import (
 )
 from app.db import db  # Import instance SQLAlchemy databáze
 from sqlalchemy.exc import IntegrityError  # Pro odchytávání chyb unikátnosti
-from app.api import api_v1_bp
 from sqlalchemy import or_
 from app.utils.auth_decorator import access_control  # Dekorátor pro řízení přístupu
 from app.utils.enums import UserRoleEnum  # Enum pro role
 
 
-@api_v1_bp.route("/login")
+auth_bp = Blueprint("auth", __name__, url_prefix="/auth",
+                    description="Blueprint zajišťující auth operace")
+
+
+@auth_bp.route("/login")
 class UserLogin(MethodView):
-    @api_v1_bp.arguments(UserLoginSchema)
+    @auth_bp.arguments(UserLoginSchema)
     def post(self, user_data):
         """Přihlásí uživatele a vrátí JWT tokeny."""
         login_identifier = user_data["username_or_email"]
@@ -51,7 +55,7 @@ class UserLogin(MethodView):
         abort(401, message="Nesprávné uživatelské jméno/email nebo heslo.")
 
 
-@api_v1_bp.route("/logout", methods=["POST"])
+@auth_bp.route("/logout", methods=["POST"])
 class UserLogout(MethodView):
     """
     Resource pro odhlášení uživatele (blacklistování JWT).
@@ -94,18 +98,18 @@ class UserLogout(MethodView):
             abort(500, message="Interní chyba serveru při odhlašování.")
 
 
-@api_v1_bp.route("/register")
+@auth_bp.route("/register")
 class UserRegisterResource(MethodView):
     """
     Resource pro registraci nových uživatelů.
     """
 
-    @api_v1_bp.arguments(UserCreateSchema)
+    @auth_bp.arguments(UserCreateSchema)
     # Dekorátor definuje očekávaná vstupní data v těle požadavku.
     # - UserCreateSchema: Určuje Marshmallow schéma pro validaci vstupních dat.
     # - Pokud validace selže, automaticky vrátí chybu 422 Unprocessable Entity.
     # - Validovaná data jsou předána jako argument metody (zde 'new_user_data').
-    @api_v1_bp.response(201, UserSchema)
+    @auth_bp.response(201, UserSchema)
     # Dekorátor definuje úspěšnou odpověď pro vytvoření (HTTP 201 Created).
     # - UserSchema: Určuje, že odpověď bude jeden objekt serializovaný pomocí UserSchema.
     def post(self, new_user_data):
@@ -150,7 +154,7 @@ class UserRegisterResource(MethodView):
         return user
 
 
-@api_v1_bp.route("/refresh", methods=["POST"])
+@auth_bp.route("/refresh", methods=["POST"])
 class TokenRefresh(MethodView):
     """
     Resource pro obnovení access tokenu pomocí refresh tokenu.
@@ -171,15 +175,15 @@ class TokenRefresh(MethodView):
         return jsonify(access_token=new_access_token), 200
 
 
-@api_v1_bp.route("/users/<uuid:user_id>/roles")
+@auth_bp.route("/<uuid:user_id>/roles")
 class UserRolesManagementResource(MethodView):
     """
     Resource pro správu rolí konkrétního uživatele.
     Vyžaduje administrátorská práva.
     """
 
-    @api_v1_bp.arguments(UserRoleAssignSchema)
-    @api_v1_bp.response(200, UserSchema)  # Vrátí aktualizovaného uživatele
+    @auth_bp.arguments(UserRoleAssignSchema)
+    @auth_bp.response(200, UserSchema)  # Vrátí aktualizovaného uživatele
     @access_control(required_roles=[UserRoleEnum.ADMIN])
     def post(self, role_data, user_id):
         """
@@ -206,7 +210,7 @@ class UserRolesManagementResource(MethodView):
         # Pokud uživatel roli již má, neprovádíme žádnou akci, vrátíme aktuální stav uživatele.
         return user
 
-    @api_v1_bp.response(200, RoleSchema(many=True))
+    @auth_bp.response(200, RoleSchema(many=True))
     # @access_control(required_roles=[UserRoleEnum.ADMIN])
     def get(self, user_id):
         """
@@ -218,13 +222,13 @@ class UserRolesManagementResource(MethodView):
         return user.roles.all()  # .all() protože user.roles je lazy='dynamic'
 
 
-@api_v1_bp.route("/users/<uuid:user_id>/roles/<int:role_id>")
+@auth_bp.route("/<uuid:user_id>/roles/<int:role_id>")
 class UserRoleDetailManagementResource(MethodView):
     """
     Resource pro odebrání konkrétní role uživateli.
     Vyžaduje administrátorská práva.
     """
-    @api_v1_bp.response(204)
+    @auth_bp.response(204)
     # @access_control(required_roles=[UserRoleEnum.ADMIN])
     def delete(self, user_id, role_id):
         """

@@ -1,6 +1,6 @@
 export interface User {
-    id: number;
-    username: string;
+    created_at: string;
     email: string;
-    created_at: string; // Datum jako string (ISO formát z API)
+    id: string;
+    username: string; // Datum jako string (ISO formát z API)
 }

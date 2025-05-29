@@ -12,7 +12,7 @@ const UsersPage: React.FC = () => {
             try {
                 setLoading(true);
                 // Použití relativní cesty díky proxy ve vite.config.js
-                const response = await axios.get<User[]>('/api/v1/users');
+                const response = await axios.get<User[]>('/api/v1/users/');
                 setUsers(response.data);
                 setError(null);
             } catch (err) {
@@ -26,13 +26,16 @@ const UsersPage: React.FC = () => {
         fetchUsers();
     }, []); // Prázdné pole závislostí znamená, že se efekt spustí jen jednou po mountnutí
 
-    if (loading) return <p className="text-center">Načítám uživatele...</p>;
-    if (error) return <p className="text-center text-red-600">{error}</p>;
+    // if (loading) return <p className="text-center">Načítám uživatele...</p>;
+    // if (error) return <p className="text-center text-red-600">{error}</p>;
 
     return (
+
         <div>
-            <h1 className="text-3xl font-bold mb-4">Seznam Uživatelů</h1>
-            {users.length === 0 ? (
+            {loading && <p className="text-center">Načítám uživatele...</p>}
+            {error && <p className="text-center text-red-600">{error}</p>}
+            {!loading && <h1 className="text-3xl font-bold mb-4">Seznam Uživatelů</h1>}
+            {!loading && users.length === 0 ? (
                 <p>Nenalezeni žádní uživatelé.</p>
             ) : (
                 <ul className="list-disc pl-5 space-y-2">

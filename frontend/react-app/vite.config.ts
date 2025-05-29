@@ -12,10 +12,10 @@ export default defineConfig({
       // Všechny požadavky začínající /api budou přesměrovány na backend
       '/api': {
         // Cíl: název služby backendu a port v Docker Compose
-        target: 'http://backend:5000',
+        target: 'http://is_backend_c:5000',
         changeOrigin: true, // Potřebné pro virtuální hostování
         // secure: false,      // Pokud backend běží na HTTPS s self-signed certifikátem
-        // rewrite: (path) => path.replace(/^\/api/, ''), // Pokud nechcete /api v cílové URL
+        //rewrite: (path) => path.replace(/^\/api/, ''), // Pokud nechcete /api v cílové URL
       }
     }
   }

@@ -31,6 +31,7 @@ class UsersResource(MethodView):
     # - UserSchema(many=True): Určuje, že odpověď bude seznam objektů,
     #   které budou serializovány pomocí UserSchema.
     # - Automaticky generuje dokumentaci pro OpenAPI (Swagger).
+    @access_control()
     def get(self):
         """Získat seznam všech uživatelů."""
         # Použití moderního stylu SQLAlchemy 2.0 pro dotazování

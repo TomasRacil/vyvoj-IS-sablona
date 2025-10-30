@@ -94,9 +94,28 @@ backend/
     * Přidejte nebo upravte třídy modelů podle potřeb vašeho IS.
 2.  **Generování Migrace:**
     * Po změně modelů otevřete terminál (lokální nebo v Dev Containeru) a spusťte:
-        ```bash
-        alembic revision --autogenerate -m "Stručný popis změny modelu"
-        ```
+
+      Pokud adresář `migrations/` ještě nebyl inicializován (např. při prvním spuštění projektu), můžete použít wrapper z Flask-Migrate a inicializovat Alembic pomocí:
+
+      ```bash
+      export FLASK_APP=run.py
+      # (volitelně) export FLASK_ENV=development
+      flask db init
+      ```
+
+      Poté můžete vygenerovat migraci a aplikovat ji:
+
+      ```bash
+      flask db migrate -m "Stručný popis změny modelu"
+      flask db upgrade
+      ```
+
+      Poznámka: V tomto repozitáři je již adresář `migrations/` (viz výše). Pokud tam je, `flask db init` obvykle není potřeba a můžete rovnou spustit:
+
+      ```bash
+      alembic revision --autogenerate -m "Stručný popis změny modelu"
+      ```
+
     * Tím se v adresáři `migrations/versions/` vytvoří nový Python soubor s migračním skriptem. Zkontrolujte jeho obsah.
 3.  **Aplikace Migrace:**
     * Aplikujte vygenerovanou migraci na databázi:

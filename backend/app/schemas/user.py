@@ -1,4 +1,5 @@
 from marshmallow import Schema, fields, validate
+from .role import RoleSchema
 
 # --- Schémata pro model User ---
 
@@ -33,6 +34,9 @@ class UserSchema(Schema):
     # `dump_only=True`: Datum vytvoření je typicky generováno serverem/databází,
     # takže ho chceme pouze zahrnout v odpovědi (serializace), ne očekávat na vstupu.
     created_at = fields.DateTime(dump_only=True)
+
+    # Přidání rolí k uživateli (pouze pro výstup/dump)
+    roles = fields.Nested(RoleSchema, many=True, dump_only=True)
 
 
 class UserCreateSchema(Schema):

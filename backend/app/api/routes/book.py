@@ -14,6 +14,7 @@ from app.schemas import BookSchema, BookCreateSchema, BookUpdateSchema
 from sqlalchemy.exc import IntegrityError
 
 from app.utils.auth_decorator import access_control
+from app.utils.enums import UserRoleEnum
 
 # --- Endpointy pro knihy ---
 
@@ -45,6 +46,7 @@ class BooksResource(MethodView):
     @book_bp.arguments(BookCreateSchema)
     # Úspěšná odpověď bude HTTP 201 s nově vytvořenou knihou serializovanou pomocí BookSchema.
     @book_bp.response(201, BookSchema)
+    @access_control(required_roles=[UserRoleEnum.EDITOR, UserRoleEnum.ADMIN])
     def post(self, new_book_data):
         """
         Vytvořit novou knihu.
@@ -109,7 +111,7 @@ class BooksResource(MethodView):
         return book
 
 
-@book_bp.route("/<int:book_id>")
+@book_bp.route("/<uuid:book_id>")
 class BookResource(MethodView):
     """
     Resource pro operace s konkrétní knihou, identifikovanou pomocí ID.
@@ -132,6 +134,7 @@ class BookResource(MethodView):
     @book_bp.arguments(BookUpdateSchema)
     # Úspěšná odpověď bude HTTP 200 s aktualizovanou knihou.
     @book_bp.response(200, BookSchema)
+    @access_control(required_roles=[UserRoleEnum.EDITOR, UserRoleEnum.ADMIN])
     def put(self, update_data, book_id):
         """
         Aktualizovat existující knihu.
@@ -175,7 +178,7 @@ class BookResource(MethodView):
         # Pokud se aktualizuje ISBN, zkontroluje se jeho unikátnost (nesmí patřit jiné knize).
         if new_isbn and new_isbn != book.isbn:
             stmt = db.select(Book).where(
-                Book.isbn == new_isbn, Book.book_id != book_id)
+                Book.isbn == new_isbn, Book.id != book_id)
             existing_book_isbn = db.session.scalars(stmt).first()
             if existing_book_isbn:
                 # Pokud ISBN již používá jiná kniha, vrátí chybu 409 Conflict.
@@ -204,6 +207,7 @@ class BookResource(MethodView):
     # DELETE /books/<book_id>: Smaže knihu.
     # Úspěšná odpověď bude HTTP 204 No Content.
     @book_bp.response(204)
+    @access_control(required_roles=[UserRoleEnum.ADMIN])
     def delete(self, book_id):
         """Smazat knihu podle ID."""
         book = db.session.get(Book, book_id)

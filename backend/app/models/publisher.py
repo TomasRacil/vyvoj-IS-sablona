@@ -2,6 +2,9 @@
 from app import db
 
 
+from sqlalchemy.dialects.postgresql import UUID
+import uuid
+
 class Publisher(db.Model):
     """
     Model reprezentující vydavatele knih.
@@ -10,18 +13,14 @@ class Publisher(db.Model):
 
     __tablename__ = "publishers"  # Explicitní název tabulky v databázi
 
-    # Primární klíč (automaticky se generuje jako SERIAL v PostgreSQL)
-    publisher_id = db.Column(db.Integer, primary_key=True)
-    # Název vydavatele - textový řetězec, max 100 znaků, musí být unikátní a nesmí být NULL
+    # Primární klíč
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # Název vydavatele
     name = db.Column(db.String(100), unique=True, nullable=False)
-    # Sídlo vydavatele - delší text, může být NULL
-    headquarters = db.Column(db.Text, nullable=True)
+    # Sídlo vydavatele
+    address = db.Column(db.String(200), nullable=True)
 
     # Definice vztahu 1:N k tabulce 'books'
-    # 'Book' je název třídy modelu na druhé straně vztahu.
-    # back_populates='publisher' propojuje tento vztah s atributem 'publisher' v modelu Book.
-    # lazy='dynamic' znamená, že atribut 'books' vrátí objekt dotazu (query object),
-    # který lze dále filtrovat/řadit, než se reálně načtou data z DB.
     books = db.relationship("Book", back_populates="publisher", lazy="dynamic")
 
     # Metoda pro reprezentaci objektu jako řetězce (užitečné pro ladění)

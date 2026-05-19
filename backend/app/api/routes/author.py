@@ -85,7 +85,7 @@ class AuthorsResource(MethodView):
 # Dekorátor registruje třídu pro danou cestu s parametrem na blueprintu
 
 
-@author_bp.route("/<int:author_id>")
+@author_bp.route("/<uuid:author_id>")
 class AuthorResource(MethodView):
     """
     Resource pro operace s konkrétním autorem (/authors/<id>).

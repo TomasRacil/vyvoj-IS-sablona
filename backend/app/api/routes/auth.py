@@ -24,6 +24,21 @@ auth_bp = Blueprint("auth", __name__, url_prefix="/auth",
                     description="Blueprint zajišťující auth operace")
 
 
+@auth_bp.route("/roles")
+class RolesResource(MethodView):
+    """
+    Resource pro získání všech dostupných rolí.
+    """
+
+    @auth_bp.response(200, RoleSchema(many=True))
+    @access_control(required_roles=[UserRoleEnum.ADMIN])
+    def get(self):
+        """Získat seznam všech dostupných rolí."""
+        stmt = db.select(Role).order_by(Role.name)
+        roles = db.session.scalars(stmt).all()
+        return roles
+
+
 @auth_bp.route("/login")
 class UserLogin(MethodView):
     @auth_bp.arguments(UserLoginSchema)
@@ -48,8 +63,13 @@ class UserLogin(MethodView):
             decoded_refresh_token = decode_token(refresh_token_string)
             refresh_jti = decoded_refresh_token['jti']
 
-            access_token = create_access_token(identity=str(
-                user.id), additional_claims={"refresh_jti": refresh_jti})
+            # Získání názvů rolí pro uložení do tokenu
+            roles = [role.name for role in user.roles.all()]
+            
+            access_token = create_access_token(
+                identity=str(user.id), 
+                additional_claims={"refresh_jti": refresh_jti, "roles": roles}
+            )
             return jsonify(access_token=access_token, refresh_token=refresh_token_string), 200
 
         abort(401, message="Nesprávné uživatelské jméno/email nebo heslo.")
@@ -109,9 +129,6 @@ class UserRegisterResource(MethodView):
     # - UserCreateSchema: Určuje Marshmallow schéma pro validaci vstupních dat.
     # - Pokud validace selže, automaticky vrátí chybu 422 Unprocessable Entity.
     # - Validovaná data jsou předána jako argument metody (zde 'new_user_data').
-    @auth_bp.response(201, UserSchema)
-    # Dekorátor definuje úspěšnou odpověď pro vytvoření (HTTP 201 Created).
-    # - UserSchema: Určuje, že odpověď bude jeden objekt serializovaný pomocí UserSchema.
     def post(self, new_user_data):
         """
         Vytvořit nového uživatele.
@@ -137,7 +154,28 @@ class UserRegisterResource(MethodView):
         try:
             db.session.add(user)
             db.session.commit()
-        except IntegrityError as e:  # Specifická chyba pro porušení unikátnosti
+            
+            # Automatické přihlášení po registraci - vygenerování tokenů
+            refresh_token_string = create_refresh_token(identity=user.id)
+            decoded_refresh_token = decode_token(refresh_token_string)
+            refresh_jti = decoded_refresh_token['jti']
+            
+            # Nový uživatel má typicky prázdný seznam rolí, pokud se nepřiřadí hned
+            roles = [role.name for role in user.roles.all()]
+
+            access_token = create_access_token(
+                identity=str(user.id), 
+                additional_claims={"refresh_jti": refresh_jti, "roles": roles}
+            )
+
+            return jsonify({
+                "message": "Uživatel byl úspěšně zaregistrován.",
+                "user": UserSchema().dump(user),
+                "access_token": access_token,
+                "refresh_token": refresh_token_string
+            }), 201
+
+        except IntegrityError as e:
             db.session.rollback()
             # Logování chyby by bylo vhodné
             # print(f"IntegrityError: {e}")
@@ -150,8 +188,6 @@ class UserRegisterResource(MethodView):
             # Logování chyby
             # print(f"Exception: {e}")
             abort(500, message="Interní chyba serveru při ukládání uživatele.")
-        # Vrácení nově vytvořeného uživatele (serializace proběhne automaticky)
-        return user
 
 
 @auth_bp.route("/refresh", methods=["POST"])
@@ -170,8 +206,14 @@ class TokenRefresh(MethodView):
         current_refresh_token_payload = get_jwt()
         refresh_jti = current_refresh_token_payload['jti']
 
+        # Získání uživatele pro načtení aktuálních rolí
+        user = db.session.get(User, current_user_identity)
+        roles = [role.name for role in user.roles.all()] if user else []
+
         new_access_token = create_access_token(
-            identity=current_user_identity, additional_claims={"refresh_jti": refresh_jti})
+            identity=current_user_identity, 
+            additional_claims={"refresh_jti": refresh_jti, "roles": roles}
+        )
         return jsonify(access_token=new_access_token), 200
 
 
@@ -222,14 +264,14 @@ class UserRolesManagementResource(MethodView):
         return user.roles.all()  # .all() protože user.roles je lazy='dynamic'
 
 
-@auth_bp.route("/<uuid:user_id>/roles/<int:role_id>")
+@auth_bp.route("/<uuid:user_id>/roles/<uuid:role_id>")
 class UserRoleDetailManagementResource(MethodView):
     """
     Resource pro odebrání konkrétní role uživateli.
     Vyžaduje administrátorská práva.
     """
     @auth_bp.response(204)
-    # @access_control(required_roles=[UserRoleEnum.ADMIN])
+    @access_control(required_roles=[UserRoleEnum.ADMIN])
     def delete(self, user_id, role_id):
         """
         Odebrat roli uživateli.

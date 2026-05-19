@@ -9,7 +9,7 @@ class RoleSchema(Schema):
     """
     class Meta:
         title = "RoleSchema"  # Název schématu pro OpenAPI dokumentaci
-    id = fields.Integer(dump_only=True, description="Unikátní ID role.")
+    id = fields.UUID(dump_only=True, description="Unikátní ID role.")
     name = fields.String(
         required=True, description="Název role (např. admin, editor).")
     description = fields.String(
@@ -19,5 +19,5 @@ class RoleSchema(Schema):
 class UserRoleAssignSchema(Schema):
     class Meta:
         title = "UserRoleAssignSchema"  # Název schématu pro OpenAPI dokumentaci
-    role_id = fields.Integer(
+    role_id = fields.UUID(
         required=True, description="ID role, která má být přiřazena.")

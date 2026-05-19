@@ -27,19 +27,30 @@ class UsersResource(MethodView):
     """
 
     @user_bp.response(200, UserSchema(many=True))
-    # Dekorátor definuje úspěšnou odpověď (HTTP 200 OK).
-    # - UserSchema(many=True): Určuje, že odpověď bude seznam objektů,
-    #   které budou serializovány pomocí UserSchema.
-    # - Automaticky generuje dokumentaci pro OpenAPI (Swagger).
-    @access_control()
+    @access_control(required_roles=[UserRoleEnum.ADMIN])
     def get(self):
         """Získat seznam všech uživatelů."""
-        # Použití moderního stylu SQLAlchemy 2.0 pro dotazování
         stmt = db.select(User).order_by(User.username)
-        # scalars() vrátí jednotlivé hodnoty (objekty User), all() je načte
         users = db.session.scalars(stmt).all()
-        # Flask-Smorest se postará o serializaci pomocí UserSchema(many=True)
         return users
+
+
+@user_bp.route("/me")
+class UserMeResource(MethodView):
+    """
+    Resource pro získání informací o aktuálně přihlášeném uživateli.
+    """
+
+    @user_bp.response(200, UserSchema)
+    @access_control()
+    def get(self):
+        """Získat profil aktuálně přihlášeného uživatele."""
+        from flask_jwt_extended import get_jwt_identity
+        user_id = get_jwt_identity()
+        user = db.session.get(User, user_id)
+        if user is None:
+            abort(404, message="Uživatel nebyl nalezen.")
+        return user
 
 
 @user_bp.route("/<uuid:user_id>")  # Změna typu user_id na uuid
@@ -50,7 +61,7 @@ class UserResource(MethodView):
     """
 
     @user_bp.response(200, UserSchema)
-    # Odpověď pro úspěšné nalezení (HTTP 200 OK), serializovaná UserSchema.
+    @access_control(required_roles=[UserRoleEnum.ADMIN], allow_owner=True, owner_id_param_name="user_id")
     def get(self, user_id):
         """Získat detail uživatele podle ID."""
         # Použití metody get_or_404 pro snadné získání záznamu nebo vrácení 404 Not Found
@@ -64,7 +75,7 @@ class UserResource(MethodView):
         UserSchema
     )  # Předpokládáme UserSchema pro update, možná budete chtít UserUpdateSchema
     @user_bp.response(200, UserSchema)
-    @access_control(UserRoleEnum.EDITOR, True, "user_id")
+    @access_control(required_roles=[UserRoleEnum.ADMIN], allow_owner=True, owner_id_param_name="user_id")
     def put(self, update_data, user_id):
         """
         Aktualizovat existujícího uživatele (celý záznam).
@@ -94,6 +105,7 @@ class UserResource(MethodView):
         return user
 
     @user_bp.response(204)  # Odpověď HTTP 204 No Content pro úspěšné smazání
+    @access_control(required_roles=[UserRoleEnum.ADMIN])
     def delete(self, user_id):
         """Smazat uživatele podle ID."""
         user = db.session.get(User, user_id)

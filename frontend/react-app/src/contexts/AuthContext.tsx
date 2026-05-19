@@ -9,7 +9,7 @@ interface AuthTokens {
 
 interface DecodedToken {
     sub: string; // User ID
-    // Můžete přidat další pole z tokenu, která chcete používat, např. exp, iat, role atd.
+    roles: string[]; // Seznam rolí uživatele
 }
 
 interface AuthContextType {
@@ -17,6 +17,7 @@ interface AuthContextType {
     userSub: string | null; // Identita uživatele (subject)
     isAuthenticated: boolean;
     isLoading: boolean;
+    userRoles: string[]; // Přidáno pro kontrolu rolí
     login: (newTokens: AuthTokens) => void;
     logout: () => void;
 }
@@ -26,6 +27,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [tokens, setTokens] = useState<AuthTokens | null>(null);
     const [userSub, setUserSub] = useState<string | null>(null);
+    const [userRoles, setUserRoles] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
 
     // Pomocná funkce pro aktualizaci stavu a localStorage
@@ -35,8 +37,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 const decodedToken = jwtDecode<DecodedToken>(newTokens.accessToken);
                 setTokens(newTokens);
                 setUserSub(decodedToken.sub);
+                setUserRoles(decodedToken.roles || []);
                 localStorage.setItem('authTokens', JSON.stringify(newTokens));
                 localStorage.setItem('userSub', decodedToken.sub);
+                localStorage.setItem('userRoles', JSON.stringify(decodedToken.roles || []));
             } catch (e) {
                 console.error("Chyba při dekódování tokenu během aktualizace stavu:", e);
                 // Pokud dekódování selže, odhlásíme uživatele
@@ -48,8 +52,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } else { // Odhlášení
             setTokens(null);
             setUserSub(null);
+            setUserRoles([]);
             localStorage.removeItem('authTokens');
             localStorage.removeItem('userSub');
+            localStorage.removeItem('userRoles');
         }
     };
 
@@ -63,17 +69,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 const storedUserSub = localStorage.getItem('userSub');
                 if (storedUserSub) {
                     setUserSub(storedUserSub);
+                    const storedRoles = localStorage.getItem('userRoles');
+                    if (storedRoles) setUserRoles(JSON.parse(storedRoles));
                 } else if (parsedTokens.accessToken) {
                     try {
                         const decodedToken = jwtDecode<DecodedToken>(parsedTokens.accessToken);
                         setUserSub(decodedToken.sub);
+                        setUserRoles(decodedToken.roles || []);
                         localStorage.setItem('userSub', decodedToken.sub);
+                        localStorage.setItem('userRoles', JSON.stringify(decodedToken.roles || []));
                     } catch (decodeError) {
                         console.error("Chyba při dekódování tokenu při startu:", decodeError);
                         localStorage.removeItem('authTokens');
                         localStorage.removeItem('userSub');
+                        localStorage.removeItem('userRoles');
                         setTokens(null);
                         setUserSub(null);
+                        setUserRoles([]);
                     }
                 }
             }
@@ -123,7 +135,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const isAuthenticated = !!tokens?.accessToken;
 
     return (
-        <AuthContext.Provider value={{ tokens, userSub, isAuthenticated, isLoading, login, logout }}>
+        <AuthContext.Provider value={{ tokens, userSub, userRoles, isAuthenticated, isLoading, login, logout }}>
             {children}
         </AuthContext.Provider>
     );

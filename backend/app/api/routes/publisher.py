@@ -86,7 +86,7 @@ class PublishersResource(MethodView):
 # Opraveno: Přesunuto na správné místo před definici třídy
 
 
-@publisher_bp.route("/<int:publisher_id>")
+@publisher_bp.route("/<uuid:publisher_id>")
 class PublisherResource(MethodView):
     """
     Resource pro operace s konkrétním vydavatelem, identifikovaným pomocí ID.
@@ -124,7 +124,7 @@ class PublisherResource(MethodView):
             # Hledání jiného vydavatele (s jiným ID) se stejným novým jménem.
             if db.session.scalars(db.select(Publisher).where(
                 Publisher.name == new_name,
-                Publisher.publisher_id != publisher_id
+                Publisher.id != publisher_id
             )).first():
                 abort(
                     409,

@@ -61,16 +61,20 @@ const UsersPage: React.FC = () => {
     const handleSaveUser = async (userId: string, updatedData: Partial<Pick<User, 'username' | 'email'>>) => {
         try {
             const response = await axiosInstance.put<User>(`/users/${userId}`, updatedData);
-            setUsers(prevUsers =>
-                prevUsers.map(user =>
-                    user.id === userId ? { ...user, ...response.data } : user
-                )
-            );
+            handleUpdateUser(response.data);
             console.log("Uživatel úspěšně aktualizován:", response.data);
         } catch (err) {
             console.error(`Chyba při aktualizaci uživatele s ID ${userId}:`, err);
             setError(`Nepodařilo se aktualizovat uživatele ${updatedData.username || userId}.`);
         }
+    };
+
+    const handleUpdateUser = (updatedUser: User) => {
+        setUsers(prevUsers =>
+            prevUsers.map(user =>
+                user.id === updatedUser.id ? updatedUser : user
+            )
+        );
     };
     // if (loading) return <p className="text-center">Načítám uživatele...</p>;
     // if (error) return <p className="text-center text-red-600">{error}</p>;
@@ -92,7 +96,15 @@ const UsersPage: React.FC = () => {
                     {users.length === 0 ? (
                         <p className="text-center text-gray-500">Nenalezeni žádní uživatelé.</p>
                     ) : (
-                        users.map((user) => <UserCard key={user.id} user={user} onDeleteUser={handleRemoveUser} onSaveUser={handleSaveUser} />)
+                        users.map((user) => (
+                            <UserCard 
+                                key={user.id} 
+                                user={user} 
+                                onDeleteUser={handleRemoveUser} 
+                                onSaveUser={handleSaveUser} 
+                                onUpdateUser={handleUpdateUser}
+                            />
+                        ))
                     )}
                 </>
             )}

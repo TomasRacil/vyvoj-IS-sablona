@@ -14,11 +14,9 @@ class AuthorSchema(Schema):
         # Název schématu pro OpenAPI/Swagger dokumentaci.
         title = "AuthorSchema"
 
-    # `dump_only=True`: ID autora je generováno databází, takže ho pouze vracíme (serializujeme).
-    author_id = fields.Int(dump_only=True)
+    # `dump_only=True`: ID autora je generováno databází
+    id = fields.UUID(dump_only=True)
     # `required=True`: Křestní jméno je povinný atribut při serializaci.
-    # `validate=validate.Length(...)`: Validace délky jména.
-    # `error`: Vlastní chybová hláška pro případ neúspěšné validace.
     first_name = fields.Str(
         required=True,
         validate=validate.Length(
@@ -26,28 +24,17 @@ class AuthorSchema(Schema):
         ),
     )
     # `required=True`: Příjmení je povinný atribut při serializaci.
-    # `validate=validate.Length(...)`: Validace délky příjmení.
     last_name = fields.Str(
         required=True,
         validate=validate.Length(
             min=1, max=50, error="Příjmení musí mít 1 až 50 znaků."
         ),
     )
-    # `allow_none=True`: Rok narození může být `None` (pokud není znám).
-    # `validate=validate.Range(min=0)`: Validace zajišťuje, že rok narození není záporné číslo.
-    # `error_messages={"validator_failed": ...}`: Vlastní chybová hláška pro neúspěšnou validaci `Range`.
-    birth_year = fields.Int(
-        allow_none=True,
-        validate=validate.Range(
-            min=0
-        ),
-        error_messages={
-            "validator_failed": "Rok narození musí být kladné celé číslo."},
-    )
+    # `allow_none=True`: Datum narození může být `None`
+    birth_date = fields.Date(allow_none=True)
     # `fields.List(fields.Nested(...))`: Seznam knih napsaných tímto autorem.
-    # `only=("book_id", "title")`: Z každé knihy se zobrazí pouze ID a název.
     books = fields.List(fields.Nested(
-        "BookSchema", only=("book_id", "title")))
+        "BookSchema", only=("id", "title")))
 
 
 class AuthorCreateSchema(Schema):
@@ -73,13 +60,5 @@ class AuthorCreateSchema(Schema):
             min=1, max=50, error="Příjmení musí mít 1 až 50 znaků."
         ),
     )
-    # `allow_none=True`: Rok narození může být `None`.
-    # `required=False`: Rok narození není povinný při vytváření autora.
-    # `validate=validate.Range(min=0)`: Validace číselného rozsahu.
-    birth_year = fields.Int(
-        allow_none=True,
-        required=False,
-        validate=validate.Range(min=0),
-        error_messages={
-            "validator_failed": "Rok narození musí být kladné celé číslo."},
-    )
+    # `allow_none=True`: Datum narození může být `None`.
+    birth_date = fields.Date(allow_none=True, required=False)

@@ -3,25 +3,33 @@ import HomePage from './pages/HomePage';
 import UsersPage from './pages/UsersPage';
 import { JSX } from 'react';
 import AuthPage from './pages/AuthPage';
-import ProtectedRoute from './components/ProtectedRoute'; // Import ProtectedRoute
+import BooksPage from './pages/BooksPage';
+import BookDetailPage from './pages/BookDetailPage';
+import BookEditPage from './pages/BookEditPage';
+import ProfilePage from './pages/ProfilePage';
+import ProtectedRoute from './components/ProtectedRoute';
 import { useAuth } from './contexts/AuthContext';
 
-function App(): JSX.Element { // Přidán typ návratové hodnoty
-  const { isAuthenticated, logout } = useAuth();
+function App(): JSX.Element {
+  const { isAuthenticated, logout, userRoles } = useAuth();
 
   return (
     <Router>
       <div className="flex flex-col min-h-screen min-w-screen bg-gray-100">
         <nav className="bg-blue-600 p-4 shadow-md mb-6">
-          <ul className="flex space-x-6 container mx-auto">
-            <li><Link to="/" className="hover:text-blue-200 transition-colors">Domů</Link></li>
-            {isAuthenticated && ( // Zobrazit pouze pokud je uživatel přihlášen
-              <li><Link to="/users" className="hover:text-blue-200 transition-colors">Uživatelé</Link></li>
+          <ul className="flex space-x-6 container mx-auto text-white">
+            <li><Link to="/" className="hover:text-blue-200 transition-colors font-medium">Domů</Link></li>
+            <li><Link to="/books" className="hover:text-blue-200 transition-colors font-medium">Knihy</Link></li>
+            {userRoles.includes('admin') && (
+              <li><Link to="/users" className="hover:text-blue-200 transition-colors font-medium">Uživatelé</Link></li>
+            )}
+            {isAuthenticated && (
+              <li><Link to="/profile" className="hover:text-blue-200 transition-colors font-medium">Můj Profil</Link></li>
             )}
             {isAuthenticated ? (
-              <li><button onClick={logout} className="hover:text-blue-200 transition-colors">Odhlásit se</button></li>
+              <li><button onClick={logout} className="hover:text-blue-200 transition-colors font-medium">Odhlásit se</button></li>
             ) : (
-              <li><Link to="/auth/login" className="hover:text-blue-200 transition-colors">Přihlášení</Link></li>
+              <li><Link to="/auth/login" className="hover:text-blue-200 transition-colors font-medium">Přihlášení</Link></li>
             )}
           </ul>
         </nav>
@@ -30,7 +38,15 @@ function App(): JSX.Element { // Přidán typ návratové hodnoty
         <main className="flex-grow p-6 container mx-auto text-black">
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/books" element={<BooksPage />} />
+            <Route path="/books/:id" element={<BookDetailPage />} />
             <Route element={<ProtectedRoute />}>
+              <Route path="/profile" element={<ProfilePage />} />
+            </Route>
+            <Route element={<ProtectedRoute allowedRoles={['admin', 'editor']} />}>
+              <Route path="/books/:id/edit" element={<BookEditPage />} />
+            </Route>
+            <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
               <Route path="/users" element={<UsersPage />} />
             </Route>
             <Route path="/auth/login" element={<AuthPage key="login" mode="login" />} />
@@ -38,7 +54,7 @@ function App(): JSX.Element { // Přidán typ návratové hodnoty
           </Routes>
         </main>
 
-        {/* Patička (volitelně) */}
+        {/* Patička */}
         <footer className="text-center p-4 text-gray-500 mt-auto text-sm">
           © {new Date().getFullYear()} IS Šablona
         </footer>

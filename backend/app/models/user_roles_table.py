@@ -13,7 +13,7 @@ user_roles_table = db.Table(
     ),
     db.Column(
         "role_id",
-        db.Integer,
+        UUID(as_uuid=True),
         db.ForeignKey("roles.id", ondelete="CASCADE"),
         primary_key=True
     )

@@ -43,7 +43,7 @@ services:
       - frontend
 
   db:
-    image: postgres:latest
+    image: postgres:16
     container_name: is_db_c
     volumes:
       - postgres-data:/var/lib/postgresql/data
